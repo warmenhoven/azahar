@@ -1003,6 +1003,15 @@ void JitShader::Compile(const std::array<u32, MAX_PROGRAM_CODE_LENGTH>* program_
     // Copy to executable memory
     const size_t code_size = code_vec.size() * sizeof(u32);
 
+#if defined(__APPLE__)
+    code_mem = std::make_unique<oaknut::DualCodeBlock>(code_size);
+
+    program = reinterpret_cast<CompiledShader*>(reinterpret_cast<std::byte*>(code_mem->xptr()) +
+                                                program_offset);
+
+    std::memcpy(code_mem->wptr(), code_vec.data(), code_vec.size() * sizeof(u32));
+    code_mem->invalidate_all();
+#else
     code_mem = std::make_unique<oaknut::CodeBlock>(code_size);
     code_mem->unprotect();
 
@@ -1015,6 +1024,7 @@ void JitShader::Compile(const std::array<u32, MAX_PROGRAM_CODE_LENGTH>* program_
     // Memory is ready to execute
     code_mem->protect();
     code_mem->invalidate_all();
+#endif
 
     // code_vec is no longer needed
     code_vec.clear();

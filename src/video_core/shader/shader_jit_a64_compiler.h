@@ -16,6 +16,9 @@
 #include <nihstro/shader_bytecode.h>
 #include <oaknut/code_block.hpp>
 #include <oaknut/oaknut.hpp>
+#if defined(__APPLE__)
+#    include <oaknut/dual_code_block.hpp>
+#endif
 #include "common/common_types.h"
 #include "video_core/pica/shader_setup.h"
 
@@ -40,7 +43,11 @@ public:
 
     void Run(const ShaderSetup& setup, ShaderUnit& state, u32 offset) const {
         program(&setup.uniforms, &state,
+#if defined(__APPLE__)
+                reinterpret_cast<const std::byte*>(code_mem->xptr()) +
+#else
                 reinterpret_cast<const std::byte*>(code_mem->ptr()) +
+#endif
                     instruction_labels[offset].offset());
     }
 
@@ -79,7 +86,11 @@ public:
 
 private:
     std::vector<u32> code_vec;
+#if defined(__APPLE__)
+    std::unique_ptr<oaknut::DualCodeBlock> code_mem;
+#else
     std::unique_ptr<oaknut::CodeBlock> code_mem;
+#endif
 
     void Compile_Block(u32 end);
     void Compile_NextInstr();
